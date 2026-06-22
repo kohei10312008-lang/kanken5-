@@ -160,6 +160,22 @@ body{font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic Pro',sans-serif;backg
 .canvas-btn.ng-btn{background:var(--red);color:white;}
 .canvas-btn.ng-btn:hover{background:#C0392B;}
 .canvas-hint{text-align:center;font-size:.72rem;color:var(--ink-sub);font-weight:700;}
+
+/* ── タイピング自己採点 ── */
+.type-answer-reveal{display:none;background:var(--bg);border-radius:var(--radius-sm);padding:14px;text-align:center;margin-bottom:4px;}
+.type-answer-reveal.show{display:block;}
+.type-answer-label{font-size:.72rem;font-weight:800;color:var(--ink-sub);letter-spacing:.08em;margin-bottom:6px;}
+.type-answer-kanji{font-size:2.5rem;font-weight:800;color:var(--ink);margin-bottom:12px;}
+.type-judge-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.type-judge-btn{padding:12px;border-radius:var(--radius-sm);border:none;font-family:inherit;font-size:.88rem;font-weight:800;cursor:pointer;transition:all .12s;}
+.type-judge-btn.ok-btn{background:var(--green);color:white;}
+.type-judge-btn.ok-btn:hover{background:#16A34A;}
+.type-judge-btn.ng-btn{background:var(--red);color:white;}
+.type-judge-btn.ng-btn:hover{background:#C0392B;}
+
+/* ── 手書き正解表示 ── */
+.canvas-answer-reveal{display:none;background:var(--bg);border-radius:var(--radius-sm);padding:14px;text-align:center;margin-top:8px;}
+.canvas-answer-reveal.show{display:block;}
 </style>
 </head>
 <body>
@@ -271,14 +287,22 @@ body{font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic Pro',sans-serif;backg
       <input class="write-input" id="write-input" type="text" placeholder="漢字を入力" maxlength="6" onkeydown="if(event.key==='Enter')checkWrite()">
       <button class="write-check" id="write-check" onclick="checkWrite()">確認</button>
     </div>
+
     <!-- 手書き -->
     <div class="canvas-wrap" id="canvas-wrap">
       <div class="canvas-hint">ここに漢字を書いてください</div>
       <canvas class="draw-canvas" id="draw-canvas" width="560" height="180"></canvas>
       <div class="canvas-btns">
-        <button class="canvas-btn clear" onclick="clearCanvas()">🗑 けす</button>
-        <button class="canvas-btn ok-btn" onclick="judgeCanvas(true)">⭕ あってた</button>
-        <button class="canvas-btn ng-btn" onclick="judgeCanvas(false)">❌ まちがい</button>
+        <button class="canvas-btn clear" id="canvas-clear-btn" onclick="clearCanvas()">🗑 けす</button>
+        <button class="canvas-btn" id="canvas-next-btn" style="background:var(--ink);color:white;grid-column:span 2;" onclick="revealCanvasAnswer()">次へ →</button>
+      </div>
+      <div class="canvas-answer-reveal" id="canvas-answer-reveal">
+        <div class="type-answer-label">✅ 正解はこれ</div>
+        <div class="type-answer-kanji" id="canvas-answer-kanji"></div>
+        <div class="type-judge-btns">
+          <button class="type-judge-btn ok-btn" onclick="judgeCanvas(true)">⭕ あってた</button>
+          <button class="type-judge-btn ng-btn" onclick="judgeCanvas(false)">❌ まちがい</button>
+        </div>
       </div>
     </div>
     <div class="feedback" id="feedback"><span class="fb-icon" id="fb-icon"></span><span id="fb-text"></span></div>
@@ -364,7 +388,7 @@ function renderQ(){
   document.getElementById('input-tabs').className='input-tabs';document.getElementById('write-wrap').className='write-wrap';document.getElementById('canvas-wrap').className='canvas-wrap';
   document.getElementById('write-input').value='';
   document.getElementById('write-input').disabled=false;
-  document.getElementById('write-input').className='write-input';
+  document.getElementById('write-input').className='write-input';document.getElementById('canvas-answer-reveal').className='canvas-answer-reveal';
   document.getElementById('write-check').disabled=false;
   const tag=document.getElementById('q-mode-tag');
   const body=document.getElementById('q-body');
@@ -602,10 +626,20 @@ function disableCanvas(){
   c.onmousedown=null;c.onmousemove=null;c.ontouchstart=null;c.ontouchmove=null;
 }
 
+function revealCanvasAnswer(){
+  // 描画を無効化してキャンバスをロック
+  disableCanvas();
+  document.getElementById('canvas-clear-btn').disabled=true;
+  document.getElementById('canvas-next-btn').disabled=true;
+  // 正解を表示
+  document.getElementById('canvas-answer-kanji').textContent=curQ.kanji;
+  document.getElementById('canvas-answer-reveal').className='canvas-answer-reveal show';
+}
+
 function judgeCanvas(isOk){
   if(answered)return;
   answered=true;
-  disableCanvas();
+  document.getElementById('canvas-answer-reveal').className='canvas-answer-reveal';
   const canvas=document.getElementById('draw-canvas');
   canvas.className='draw-canvas '+(isOk?'ok':'ng');
   if(isOk){doCorrect();}else{doWrong('（手書き）',curQ.kanji);}
