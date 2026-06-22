@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漢検5級 練習アプリ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap');
+:root {
+  --bg:#F7F4EF;--surface:#FFFFFF;--ink:#1C1C2E;--ink-sub:#6B7280;
+  --red:#E85D4A;--red-lt:#FDF0EE;--blue:#3B82F6;--blue-lt:#EFF6FF;
+  --green:#22C55E;--green-lt:#F0FDF4;--gold:#F59E0B;--gold-lt:#FFFBEB;
+  --purple:#8B5CF6;--purple-lt:#F5F3FF;--border:#E5E7EB;
+  --shadow:0 2px 12px rgba(28,28,46,.08);--radius:20px;--radius-sm:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic Pro',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px 16px 40px;}
+.app-header{width:100%;max-width:600px;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.app-logo{display:flex;align-items:center;gap:10px;}
+.logo-stamp{width:44px;height:44px;background:var(--red);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 3px 0 #B84030;}
+.logo-text strong{font-size:1.1rem;font-weight:800;letter-spacing:.04em;}
+.logo-text span{font-size:.72rem;color:var(--ink-sub);display:block;}
+.total-badge{font-size:.75rem;font-weight:700;background:var(--surface);border:1.5px solid var(--border);border-radius:50px;padding:5px 14px;color:var(--ink-sub);}
+.total-badge b{color:var(--ink);}
+.card{width:100%;max-width:600px;background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px 24px;position:relative;overflow:hidden;}
+#screen-loading{text-align:center;padding:40px 0;}
+.spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-label{font-size:.9rem;color:var(--ink-sub);font-weight:700;}
+#screen-menu{display:none;}
+.section-label{font-size:.7rem;font-weight:800;letter-spacing:.12em;color:var(--ink-sub);text-transform:uppercase;margin-bottom:10px;}
+.grade-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:24px;}
+.grade-btn{background:var(--bg);border:2px solid transparent;border-radius:var(--radius-sm);padding:10px 4px;cursor:pointer;font-family:inherit;font-size:.78rem;font-weight:700;color:var(--ink-sub);text-align:center;transition:all .14s;line-height:1.3;}
+.grade-btn .g-emoji{font-size:1.3rem;display:block;margin-bottom:3px;}
+.grade-btn:hover{border-color:var(--red);color:var(--ink);}
+.grade-btn.active{background:var(--red-lt);border-color:var(--red);color:var(--red);}
+.mode-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;}
+.mode-btn{display:flex;align-items:center;gap:14px;background:var(--bg);border:2px solid transparent;border-radius:var(--radius-sm);padding:14px 16px;cursor:pointer;font-family:inherit;text-align:left;transition:all .14s;}
+.mode-btn:hover{border-color:var(--blue);}
+.mode-btn.active{background:var(--blue-lt);border-color:var(--blue);}
+.mode-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+.mode-btn .mode-text strong{font-size:.9rem;font-weight:800;color:var(--ink);display:block;}
+.mode-btn .mode-text span{font-size:.72rem;color:var(--ink-sub);}
+.mode-badge{margin-left:auto;font-size:.65rem;font-weight:800;padding:3px 8px;border-radius:50px;}
+.count-row{display:flex;gap:8px;margin-bottom:28px;}
+.count-btn{flex:1;background:var(--bg);border:2px solid transparent;border-radius:var(--radius-sm);padding:10px;cursor:pointer;font-family:inherit;font-size:.85rem;font-weight:700;color:var(--ink-sub);transition:all .14s;}
+.count-btn:hover{border-color:var(--green);}
+.count-btn.active{background:var(--green-lt);border-color:var(--green);color:var(--green);}
+.start-btn{width:100%;padding:16px;background:var(--red);border:none;border-radius:50px;color:white;font-family:inherit;font-size:1.05rem;font-weight:800;cursor:pointer;box-shadow:0 4px 0 #B84030;letter-spacing:.06em;transition:all .12s;}
+.start-btn:hover{background:#D44E3C;transform:translateY(-1px);}
+.start-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #B84030;}
+#screen-quiz{display:none;}
+.quiz-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.quiz-meta .q-no{font-size:.8rem;font-weight:800;color:var(--ink-sub);}
+.streak-pill{font-size:.75rem;font-weight:800;background:var(--gold-lt);color:var(--gold);border-radius:50px;padding:4px 12px;display:none;}
+.streak-pill.show{display:inline-block;}
+.prog-track{height:6px;background:var(--border);border-radius:6px;overflow:hidden;margin-bottom:22px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--red),var(--gold));border-radius:6px;transition:width .4s ease;}
+.q-mode-tag{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:800;letter-spacing:.08em;padding:4px 12px;border-radius:50px;margin-bottom:18px;}
+.q-body{text-align:center;margin-bottom:6px;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+.q-kanji{font-size:3rem;font-weight:800;line-height:1;letter-spacing:.04em;}
+.q-yomi{font-size:1.5rem;font-weight:800;color:var(--ink);}
+.q-sub{font-size:.82rem;color:var(--ink-sub);margin-bottom:20px;text-align:center;min-height:20px;}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;}
+.choice{background:var(--bg);border:2.5px solid var(--border);border-radius:var(--radius-sm);padding:16px 10px;font-family:inherit;font-size:1.25rem;font-weight:700;color:var(--ink);cursor:pointer;transition:all .12s;line-height:1.2;text-align:center;}
+.choice:hover:not(:disabled){border-color:var(--blue);background:var(--blue-lt);}
+.choice.ok{border-color:var(--green);background:var(--green-lt);color:var(--green);animation:pop .25s ease;}
+.choice.ng{border-color:var(--red);background:var(--red-lt);color:var(--red);}
+.choice:disabled{cursor:default;}
+@keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.write-wrap{display:none;gap:10px;margin-bottom:4px;}
+.write-wrap.show{display:flex;}
+.write-input{flex:1;border:2.5px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;font-family:inherit;font-size:1.5rem;font-weight:700;text-align:center;color:var(--ink);outline:none;transition:border-color .12s;}
+.write-input:focus{border-color:var(--blue);}
+.write-input.ok{border-color:var(--green);background:var(--green-lt);}
+.write-input.ng{border-color:var(--red);background:var(--red-lt);}
+.write-check{padding:0 20px;border-radius:var(--radius-sm);border:none;background:var(--blue);color:white;font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;transition:background .12s;}
+.write-check:hover{background:#2563EB;}
+.write-check:disabled{opacity:.4;cursor:default;}
+.feedback{border-radius:var(--radius-sm);padding:14px 16px;font-size:.85rem;font-weight:700;margin-top:12px;display:none;gap:10px;align-items:flex-start;line-height:1.6;}
+.feedback.show{display:flex;}
+.feedback.ok{background:var(--green-lt);color:#15803D;border:1.5px solid #BBF7D0;}
+.feedback.ng{background:var(--red-lt);color:#B91C1C;border:1.5px solid #FECACA;}
+.fb-icon{font-size:1.2rem;flex-shrink:0;}
+.next-btn{width:100%;margin-top:14px;padding:14px;border-radius:50px;border:none;background:var(--ink);color:white;font-family:inherit;font-size:.95rem;font-weight:800;cursor:pointer;display:none;letter-spacing:.04em;transition:background .12s;}
+.next-btn:hover{background:#374151;}
+.next-btn.show{display:block;}
+#screen-result{display:none;text-align:center;}
+.result-hero{font-size:3.5rem;margin-bottom:10px;animation:bounce .5s ease;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.result-title{font-size:1.4rem;font-weight:800;margin-bottom:4px;}
+.result-sub{font-size:.82rem;color:var(--ink-sub);margin-bottom:22px;}
+.result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.r-stat{background:var(--bg);border-radius:var(--radius-sm);padding:14px 8px;}
+.r-stat .val{font-size:1.8rem;font-weight:800;line-height:1;}
+.r-stat .lbl{font-size:.68rem;color:var(--ink-sub);font-weight:700;margin-top:4px;}
+.r-stat.c .val{color:var(--green);}
+.r-stat.w .val{color:var(--red);}
+.r-stat.p .val{color:var(--blue);}
+.miss-section{background:var(--red-lt);border-radius:var(--radius-sm);padding:16px;text-align:left;margin-bottom:18px;max-height:220px;overflow-y:auto;}
+.miss-section h3{font-size:.78rem;font-weight:800;color:var(--red);margin-bottom:10px;letter-spacing:.05em;}
+.miss-row{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #FECACA;font-size:.8rem;}
+.miss-row:last-child{border-bottom:none;}
+.miss-q{color:var(--ink-sub);}
+.miss-your{color:var(--red);font-weight:700;}
+.miss-arr{color:var(--ink-sub);}
+.miss-ans{color:var(--green);font-weight:800;}
+.result-btns{display:flex;flex-direction:column;gap:8px;}
+.btn-retry{padding:15px;border-radius:50px;border:none;background:var(--red);color:white;font-family:inherit;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 3px 0 #B84030;transition:all .12s;}
+.btn-retry:hover{background:#D44E3C;}
+.btn-menu{padding:13px;border-radius:50px;border:2px solid var(--border);background:white;font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;color:var(--ink-sub);transition:border-color .12s;}
+.btn-menu:hover{border-color:var(--ink-sub);}
+@media(max-width:420px){.card{padding:22px 16px;}.q-kanji{font-size:2.4rem;}.choices{gap:8px;}.choice{font-size:1.1rem;padding:14px 8px;}}
+
+/* ── スプラッシュ ── */
+#screen-splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#FFF5F3 0%,#FFF8E1 50%,#F0FDF4 100%);overflow:hidden;transition:opacity .6s ease;}
+#screen-splash.fade-out{opacity:0;pointer-events:none;}
+.sp-bubbles{position:absolute;inset:0;pointer-events:none;}
+.sp-bubble{position:absolute;bottom:-60px;font-size:2rem;animation:spFloat linear infinite;opacity:.7;}
+@keyframes spFloat{0%{transform:translateY(0) rotate(0deg);opacity:.7;}100%{transform:translateY(-110vh) rotate(360deg);opacity:0;}}
+.sp-logo-wrap{animation:spBounce .7s ease both;}
+@keyframes spBounce{0%{transform:scale(.5);opacity:0;}70%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
+.sp-stamp{width:80px;height:80px;background:var(--red);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:2.8rem;box-shadow:0 6px 0 #B84030,0 10px 30px rgba(232,93,74,.3);margin:0 auto 16px;}
+.sp-title{font-size:1.8rem;font-weight:800;color:var(--ink);letter-spacing:.04em;text-align:center;line-height:1.2;}
+.sp-sub{font-size:.85rem;color:var(--ink-sub);font-weight:700;margin-top:6px;text-align:center;letter-spacing:.06em;}
+.sp-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px;}
+.sp-badge{background:white;border-radius:50px;padding:5px 14px;font-size:.72rem;font-weight:800;color:var(--ink-sub);box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.sp-modes{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
+.sp-mode{background:white;border-radius:12px;padding:8px 12px;font-size:.75rem;font-weight:700;color:var(--ink-sub);box-shadow:0 2px 8px rgba(0,0,0,.08);text-align:center;min-width:72px;}
+.sp-mode .sp-mode-icon{font-size:1.2rem;display:block;margin-bottom:2px;}
+.sp-count-wrap{margin-top:24px;text-align:center;}
+.sp-count-num{font-size:3.5rem;font-weight:800;color:var(--red);animation:spCount .4s ease;line-height:1;}
+@keyframes spCount{0%{transform:scale(1.5);opacity:0;}100%{transform:scale(1);opacity:1;}}
+.sp-skip{font-size:.72rem;color:var(--ink-sub);margin-top:8px;letter-spacing:.06em;}
+/* ── 正解エフェクト ── */
+.correct-burst{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:5rem;z-index:1000;animation:burst .6s ease forwards;pointer-events:none;}
+@keyframes burst{0%{transform:translate(-50%,-50%) scale(.3);opacity:1;}60%{transform:translate(-50%,-50%) scale(1.3);opacity:1;}100%{transform:translate(-50%,-50%) scale(1);opacity:0;}}
+/* ── 途中終了ボタン ── */
+.quit-btn{background:none;border:1.5px solid var(--border);border-radius:50px;padding:5px 14px;font-family:inherit;font-size:.72rem;font-weight:700;color:var(--ink-sub);cursor:pointer;transition:all .12s;}
+.quit-btn:hover{border-color:var(--red);color:var(--red);}
+</style>
+</head>
+<body>
+
+<div id="screen-splash" onclick="closeSplash()">
+  <div class="sp-bubbles" id="sp-bubbles"></div>
+  <div class="sp-logo-wrap">
+    <div class="sp-stamp">✏️</div>
+    <div class="sp-title">漢検5級 練習</div>
+    <div class="sp-sub">小学1〜6年生 漢字トレーニング</div>
+    <div class="sp-badges">
+      <span class="sp-badge">📝 853字収録</span>
+      <span class="sp-badge">🎓 1〜6年生対応</span>
+      <span class="sp-badge">🏆 漢検5級対策</span>
+    </div>
+    <div class="sp-modes">
+      <div class="sp-mode"><span class="sp-mode-icon">✏️</span>書き取り</div>
+      <div class="sp-mode"><span class="sp-mode-icon">📖</span>読み</div>
+      <div class="sp-mode"><span class="sp-mode-icon">↔️</span>対義語</div>
+      <div class="sp-mode"><span class="sp-mode-icon">💡</span>意味</div>
+      <div class="sp-mode"><span class="sp-mode-icon">🎲</span>ランダム</div>
+    </div>
+  </div>
+  <div class="sp-count-wrap">
+    <div class="sp-count-num" id="sp-count">3</div>
+    <div class="sp-skip">タップでスキップ</div>
+  </div>
+</div>
+<header class="app-header">
+  <div class="app-logo">
+    <div class="logo-stamp">✏️</div>
+    <div class="logo-text">
+      <strong>漢検5級 練習</strong>
+      <span>小学1〜6年生 漢字トレーニング</span>
+    </div>
+  </div>
+  <div class="total-badge" id="total-badge">読み込み中...</div>
+</header>
+<div class="card">
+  <div id="screen-loading">
+    <div class="spinner"></div>
+    <div class="loading-label">漢字データを読み込んでいます...</div>
+  </div>
+  <div id="screen-menu">
+    <div class="section-label">学年を選ぶ</div>
+    <div class="grade-grid">
+      <button class="grade-btn active" data-grade="all" onclick="selectGrade(this)"><span class="g-emoji">🌈</span>全学年</button>
+      <button class="grade-btn" data-grade="1" onclick="selectGrade(this)"><span class="g-emoji">🌱</span>1年生</button>
+      <button class="grade-btn" data-grade="2" onclick="selectGrade(this)"><span class="g-emoji">🌿</span>2年生</button>
+      <button class="grade-btn" data-grade="3" onclick="selectGrade(this)"><span class="g-emoji">🍀</span>3年生</button>
+      <button class="grade-btn" data-grade="4" onclick="selectGrade(this)"><span class="g-emoji">🌸</span>4年生</button>
+      <button class="grade-btn" data-grade="5" onclick="selectGrade(this)"><span class="g-emoji">🌺</span>5年生</button>
+      <button class="grade-btn" data-grade="6" onclick="selectGrade(this)"><span class="g-emoji">🎓</span>6年生</button>
+    </div>
+    <div class="section-label">問題のしゅるい</div>
+    <div class="mode-list">
+      <button class="mode-btn active" data-mode="kaki" onclick="selectMode(this)">
+        <div class="mode-icon" style="background:#FDF0EE">✏️</div>
+        <div class="mode-text"><strong>書き取り</strong><span>よみがなを見て漢字を書く</span></div>
+        <span class="mode-badge" style="background:#FDF0EE;color:#E85D4A">配点50点</span>
+      </button>
+      <button class="mode-btn" data-mode="yomi" onclick="selectMode(this)">
+        <div class="mode-icon" style="background:#EFF6FF">📖</div>
+        <div class="mode-text"><strong>読み</strong><span>漢字を見て読みかたを選ぶ</span></div>
+        <span class="mode-badge" style="background:#EFF6FF;color:#3B82F6">配点20点</span>
+      </button>
+      <button class="mode-btn" data-mode="taigi" onclick="selectMode(this)">
+        <div class="mode-icon" style="background:#F5F3FF">↔️</div>
+        <div class="mode-text"><strong>対義語・類義語</strong><span>反対・似た意味の言葉を選ぶ</span></div>
+        <span class="mode-badge" style="background:#F5F3FF;color:#8B5CF6">配点20点</span>
+      </button>
+      <button class="mode-btn" data-mode="imi" onclick="selectMode(this)">
+        <div class="mode-icon" style="background:#FFFBEB">💡</div>
+        <div class="mode-text"><strong>意味</strong><span>意味の説明から漢字を選ぶ</span></div>
+        <span class="mode-badge" style="background:#FFFBEB;color:#F59E0B">練習用</span>
+      </button>
+      <button class="mode-btn" data-mode="random" onclick="selectMode(this)">
+        <div class="mode-icon" style="background:#F0FDF4">🎲</div>
+        <div class="mode-text"><strong>ランダム</strong><span>全モードをまぜて出題</span></div>
+        <span class="mode-badge" style="background:#F0FDF4;color:#22C55E">おすすめ</span>
+      </button>
+    </div>
+    <div class="section-label">問題数</div>
+    <div class="count-row">
+      <button class="count-btn active" data-count="10" onclick="selectCount(this)">10問</button>
+      <button class="count-btn" data-count="20" onclick="selectCount(this)">20問</button>
+      <button class="count-btn" data-count="30" onclick="selectCount(this)">30問</button>
+    </div>
+    <button class="start-btn" onclick="startQuiz()">🚀 スタート！</button>
+  </div>
+  <div id="screen-quiz">
+    <div class="quiz-meta">
+      <span class="q-no" id="q-no">1 / 10</span>
+      <span class="streak-pill" id="streak-pill">🔥 3連続</span>
+      <button class="quit-btn" onclick="quitQuiz()">✕ やめる</button>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="q-mode-tag" id="q-mode-tag">✏️ 書き取り</div>
+    <div class="q-body" id="q-body"></div>
+    <div class="q-sub" id="q-sub"></div>
+    <div class="choices" id="choices"></div>
+    <div class="write-wrap" id="write-wrap">
+      <input class="write-input" id="write-input" type="text" placeholder="漢字を入力" maxlength="6" onkeydown="if(event.key==='Enter')checkWrite()">
+      <button class="write-check" id="write-check" onclick="checkWrite()">確認</button>
+    </div>
+    <div class="feedback" id="feedback"><span class="fb-icon" id="fb-icon"></span><span id="fb-text"></span></div>
+    <button class="next-btn" id="next-btn" onclick="nextQ()">次の問題 →</button>
+  </div>
+  <div id="screen-result">
+    <div class="result-hero" id="r-hero">🎉</div>
+    <div class="result-title" id="r-title">よくできました！</div>
+    <div class="result-sub" id="r-sub">10問中 8問 せいかい</div>
+    <div class="result-stats">
+      <div class="r-stat c"><div class="val" id="r-correct">0</div><div class="lbl">⭕ せいかい</div></div>
+      <div class="r-stat w"><div class="val" id="r-wrong">0</div><div class="lbl">❌ まちがい</div></div>
+      <div class="r-stat p"><div class="val" id="r-pct">0%</div><div class="lbl">🏆 正解率</div></div>
+    </div>
+    <div class="miss-section" id="miss-section" style="display:none">
+      <h3>❌ まちがえた問題</h3>
+      <div id="miss-list"></div>
+    </div>
+    <div class="result-btns">
+      <button class="btn-retry" onclick="retryQuiz()">🔄 もういちど</button>
+      <button class="btn-menu" onclick="goMenu()">📋 メニューにもどる</button>
+    </div>
+  </div>
+</div>
+<script>
+const JSON_URL='https://kohei10312008-lang.github.io/kanken5/kanken5_words.json';
+let DB=[];
+let selGrade='all',selMode='kaki',selCount=10;
+let questions=[],qIdx=0,correct=0,wrong=0,streak=0;
+let missed=[],answered=false,curQ=null;
+
+window.addEventListener('DOMContentLoaded',async()=>{
+  try{
+    const res=await fetch(JSON_URL);
+    if(!res.ok)throw new Error(res.status);
+    DB=await res.json();
+    document.getElementById('total-badge').innerHTML=`<b>${DB.length}</b> 字収録`;
+    show('screen-menu');
+  }catch(e){
+    document.getElementById('screen-loading').innerHTML=
+      '<div style="color:#E85D4A;font-weight:700;padding:20px 0">データの読み込みに失敗しました。<br><span style="font-size:.8rem;color:#6B7280">kanken5_words.json がGitHub Pagesに配置されているか確認してください。</span></div>';
+  }
+});
+
+function selectGrade(el){document.querySelectorAll('.grade-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');selGrade=el.dataset.grade;}
+function selectMode(el){document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');selMode=el.dataset.mode;}
+function selectCount(el){document.querySelectorAll('.count-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');selCount=parseInt(el.dataset.count);}
+
+function startQuiz(){
+  let pool=selGrade==='all'?[...DB]:DB.filter(d=>d.grade==selGrade);
+  if(selMode==='taigi'){
+    pool=pool.filter(d=>d.taigi||d.ruigi);
+    if(pool.length<4){alert('対義語・類義語データが少ないです。学年を広げてください。');return;}
+  }
+  if(pool.length===0){alert('この学年のデータがありません。');return;}
+  const n=Math.min(selCount,pool.length);
+  questions=shuffle([...pool]).slice(0,n).map(d=>buildQ(d));
+  qIdx=0;correct=0;wrong=0;streak=0;missed=[];
+  show('screen-quiz');renderQ();
+}
+
+function buildQ(d){
+  let mode=selMode;
+  if(mode==='random'){
+    const opts=['kaki','yomi','imi'];
+    if(d.taigi||d.ruigi)opts.push('taigi');
+    mode=opts[Math.floor(Math.random()*opts.length)];
+  }
+  if(mode==='taigi'&&!d.taigi&&!d.ruigi)mode='yomi';
+  return{...d,mode};
+}
+
+function renderQ(){
+  answered=false;curQ=questions[qIdx];
+  const total=questions.length;
+  document.getElementById('q-no').textContent=`${qIdx+1} / ${total}`;
+  document.getElementById('prog-fill').style.width=`${(qIdx/total)*100}%`;
+  const sp=document.getElementById('streak-pill');
+  if(streak>=3){sp.textContent=`🔥 ${streak}連続`;sp.classList.add('show');}else sp.classList.remove('show');
+  document.getElementById('feedback').className='feedback';
+  document.getElementById('next-btn').className='next-btn';
+  document.getElementById('choices').innerHTML='';
+  document.getElementById('write-wrap').className='write-wrap';
+  document.getElementById('write-input').value='';
+  document.getElementById('write-input').disabled=false;
+  document.getElementById('write-input').className='write-input';
+  document.getElementById('write-check').disabled=false;
+  const tag=document.getElementById('q-mode-tag');
+  const body=document.getElementById('q-body');
+  const sub=document.getElementById('q-sub');
+  if(curQ.mode==='kaki'){
+    tag.textContent='✏️ 書き取り';tag.style.cssText='background:#FDF0EE;color:#E85D4A';
+    body.innerHTML=`<div class="q-yomi">${curQ.yomi.split('/')[0]}</div>`;
+    sub.textContent=`（${curQ.imi}）`;
+    document.getElementById('write-wrap').className='write-wrap show';
+    setTimeout(()=>document.getElementById('write-input').focus(),80);
+  }else if(curQ.mode==='yomi'){
+    tag.textContent='📖 読み';tag.style.cssText='background:#EFF6FF;color:#3B82F6';
+    body.innerHTML=`<div class="q-kanji">${curQ.kanji}</div>`;
+    sub.textContent=curQ.imi;
+    buildChoices(curQ.yomi.split('/')[0],DB.map(d=>d.yomi.split('/')[0]),'yomi');
+  }else if(curQ.mode==='imi'){
+    tag.textContent='💡 意味';tag.style.cssText='background:#FFFBEB;color:#F59E0B';
+    body.innerHTML=`<div class="q-kanji" style="font-size:1.5rem;line-height:1.4">${curQ.imi}</div>`;
+    sub.textContent=`よみ：${curQ.yomi.split('/')[0]}`;
+    buildChoices(curQ.kanji,DB.map(d=>d.kanji),'imi');
+  }else if(curQ.mode==='taigi'){
+    const isTaigi=curQ.taigi&&(!curQ.ruigi||Math.random()>.4);
+    const target=isTaigi?curQ.taigi:curQ.ruigi;
+    const label=isTaigi?'対義語（反対の意味）':'類義語（似た意味）';
+    tag.textContent='↔️ '+label;tag.style.cssText='background:#F5F3FF;color:#8B5CF6';
+    body.innerHTML=`<div class="q-kanji">${curQ.kanji}</div>`;
+    sub.textContent=`よみ：${curQ.yomi.split('/')[0]}　意味：${curQ.imi}`;
+    buildChoices(target,DB.map(d=>d.kanji).filter(k=>k!==curQ.kanji),'taigi');
+    curQ._ans=target;
+  }
+}
+
+function buildChoices(correctAns,pool,type){
+  const area=document.getElementById('choices');
+  const wrongs=shuffle([...new Set(pool)].filter(v=>v!==correctAns)).slice(0,3);
+  shuffle([correctAns,...wrongs]).forEach(opt=>{
+    const btn=document.createElement('button');
+    btn.className='choice';btn.textContent=opt;
+    btn.onclick=()=>checkChoice(btn,opt,correctAns);
+    area.appendChild(btn);
+  });
+}
+
+function checkChoice(btn,chosen,correctAns){
+  if(answered)return;answered=true;
+  const ok=chosen===correctAns;
+  btn.classList.add(ok?'ok':'ng');
+  if(!ok)document.querySelectorAll('.choice').forEach(b=>{if(b.textContent===correctAns)b.classList.add('ok');});
+  document.querySelectorAll('.choice').forEach(b=>b.disabled=true);
+  ok?doCorrect():doWrong(chosen,correctAns);
+  showFeedback(ok,correctAns);
+}
+
+function checkWrite(){
+  if(answered)return;
+  const val=document.getElementById('write-input').value.trim();
+  if(!val){document.getElementById('write-input').focus();return;}
+  answered=true;
+  const ok=val===curQ.kanji;
+  document.getElementById('write-input').classList.add(ok?'ok':'ng');
+  document.getElementById('write-input').disabled=true;
+  document.getElementById('write-check').disabled=true;
+  ok?doCorrect():doWrong(val,curQ.kanji);
+  showFeedback(ok,curQ.kanji);
+}
+
+function doCorrect(){correct++;streak++;showBurst();}
+function doWrong(ans,correctAns){wrong++;streak=0;missed.push({q:curQ,ans,correctAns});}
+
+function showFeedback(ok,correctAns){
+  const fb=document.getElementById('feedback');
+  document.getElementById('fb-icon').textContent=ok?'⭕':'❌';
+  if(ok){
+    fb.className='feedback show ok';
+    const msgs=['せいかい！すごい！','ばっちり！','よくできました！','かんぺき！','さすが！'];
+    document.getElementById('fb-text').textContent=msgs[Math.floor(Math.random()*msgs.length)];
+  }else{
+    fb.className='feedback show ng';
+    document.getElementById('fb-text').innerHTML=`ざんねん！正解は「<strong>${correctAns}</strong>」だよ。覚えておこう！`;
+  }
+  document.getElementById('next-btn').className='next-btn show';
+}
+
+function nextQ(){qIdx++;if(qIdx>=questions.length)showResult();else renderQ();}
+
+function showResult(){
+  const total=questions.length,pct=Math.round((correct/total)*100);
+  let hero,title;
+  if(pct>=90){hero='🏆';title='すばらしい！満点に近い！';}
+  else if(pct>=70){hero='🌟';title='よくできました！';}
+  else if(pct>=50){hero='😊';title='もう少し練習しよう！';}
+  else{hero='💪';title='あきらめないで頑張ろう！';}
+  document.getElementById('r-hero').textContent=hero;
+  document.getElementById('r-title').textContent=title;
+  document.getElementById('r-sub').textContent=`${total}問中 ${correct}問 せいかい`;
+  document.getElementById('r-correct').textContent=correct;
+  document.getElementById('r-wrong').textContent=wrong;
+  document.getElementById('r-pct').textContent=pct+'%';
+  const missEl=document.getElementById('miss-section');
+  const list=document.getElementById('miss-list');
+  if(missed.length>0){
+    missEl.style.display='block';
+    list.innerHTML=missed.map(m=>`<div class="miss-row"><span class="miss-q">${m.q.kanji}（${modeLabel(m.q.mode)}）</span><span class="miss-your">${m.ans}</span><span class="miss-arr">→</span><span class="miss-ans">${m.correctAns}</span></div>`).join('');
+  }else{missEl.style.display='none';}
+  show('screen-result');
+}
+
+function modeLabel(m){return{kaki:'書き取り',yomi:'読み',imi:'意味',taigi:'対義語類義語'}[m]||m;}
+function retryQuiz(){startQuiz();}
+function goMenu(){show('screen-menu');}
+function show(id){['screen-loading','screen-menu','screen-quiz','screen-result'].forEach(s=>{document.getElementById(s).style.display=s===id?'block':'none';});}
+function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('next-btn').classList.contains('show'))nextQ();});
+
+// ===== スプラッシュ =====
+(function(){
+  // バブル生成
+  const emojis=['✏️','📖','🎓','⭕','🌟','🏆','🌸','🌈','💡','↔️','🔥','🌿'];
+  const wrap=document.getElementById('sp-bubbles');
+  for(let i=0;i<18;i++){
+    const b=document.createElement('div');
+    b.className='sp-bubble';
+    b.textContent=emojis[i%emojis.length];
+    b.style.left=Math.random()*100+'%';
+    b.style.fontSize=(1.2+Math.random()*1.5)+'rem';
+    const dur=4+Math.random()*5;
+    b.style.animationDuration=dur+'s';
+    b.style.animationDelay=Math.random()*dur+'s';
+    wrap.appendChild(b);
+  }
+  // カウントダウン
+  let count=3;
+  const el=document.getElementById('sp-count');
+  const tick=setInterval(()=>{
+    count--;
+    if(count<=0){el.textContent='Go！';clearInterval(tick);setTimeout(closeSplash,700);}
+    else{el.textContent=count;el.style.animation='none';requestAnimationFrame(()=>{requestAnimationFrame(()=>{el.style.animation='spCount .4s ease';});});}
+  },1000);
+  window._splashTimer=tick;
+})();
+
+function closeSplash(){
+  clearInterval(window._splashTimer);
+  const sp=document.getElementById('screen-splash');
+  sp.classList.add('fade-out');
+  setTimeout(()=>sp.remove(),650);
+}
+
+// ===== 正解エフェクト =====
+function showBurst(){
+  const el=document.createElement('div');
+  el.className='correct-burst';
+  el.textContent='⭕';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),650);
+}
+
+// ===== 途中終了 =====
+function quitQuiz(){
+  if(!confirm('途中でやめてメニューに戻りますか？'))return;
+  goMenu();
+}
+</script>
+</body>
+</html>
