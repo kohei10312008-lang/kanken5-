@@ -138,6 +138,28 @@ body{font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic Pro',sans-serif;backg
 /* ── 途中終了ボタン ── */
 .quit-btn{background:none;border:1.5px solid var(--border);border-radius:50px;padding:5px 14px;font-family:inherit;font-size:.72rem;font-weight:700;color:var(--ink-sub);cursor:pointer;transition:all .12s;}
 .quit-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* ── 入力切り替えタブ ── */
+.input-tabs{display:none;gap:0;margin-bottom:10px;border-radius:var(--radius-sm);overflow:hidden;border:2px solid var(--border);}
+.input-tabs.show{display:flex;}
+.input-tab{flex:1;padding:9px;font-family:inherit;font-size:.8rem;font-weight:800;border:none;background:var(--bg);color:var(--ink-sub);cursor:pointer;transition:all .12s;}
+.input-tab.active{background:var(--blue);color:white;}
+
+/* ── 手書きキャンバス ── */
+.canvas-wrap{display:none;flex-direction:column;gap:10px;margin-bottom:4px;}
+.canvas-wrap.show{display:flex;}
+.draw-canvas{width:100%;height:180px;border:2.5px solid var(--border);border-radius:var(--radius-sm);background:white;cursor:crosshair;touch-action:none;}
+.draw-canvas.ok{border-color:var(--green);background:var(--green-lt);}
+.draw-canvas.ng{border-color:var(--red);background:var(--red-lt);}
+.canvas-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.canvas-btn{padding:10px;border-radius:var(--radius-sm);border:none;font-family:inherit;font-size:.82rem;font-weight:800;cursor:pointer;transition:all .12s;}
+.canvas-btn.clear{background:var(--bg);color:var(--ink-sub);border:2px solid var(--border);}
+.canvas-btn.clear:hover{border-color:var(--ink-sub);}
+.canvas-btn.ok-btn{background:var(--green);color:white;}
+.canvas-btn.ok-btn:hover{background:#16A34A;}
+.canvas-btn.ng-btn{background:var(--red);color:white;}
+.canvas-btn.ng-btn:hover{background:#C0392B;}
+.canvas-hint{text-align:center;font-size:.72rem;color:var(--ink-sub);font-weight:700;}
 </style>
 </head>
 <body>
@@ -239,9 +261,25 @@ body{font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic Pro',sans-serif;backg
     <div class="q-body" id="q-body"></div>
     <div class="q-sub" id="q-sub"></div>
     <div class="choices" id="choices"></div>
+    <!-- 入力切り替えタブ -->
+    <div class="input-tabs" id="input-tabs">
+      <button class="input-tab active" id="tab-type" onclick="switchInput('type')">⌨️ タイピング</button>
+      <button class="input-tab" id="tab-draw" onclick="switchInput('draw')">✏️ 手書き</button>
+    </div>
+    <!-- タイピング -->
     <div class="write-wrap" id="write-wrap">
       <input class="write-input" id="write-input" type="text" placeholder="漢字を入力" maxlength="6" onkeydown="if(event.key==='Enter')checkWrite()">
       <button class="write-check" id="write-check" onclick="checkWrite()">確認</button>
+    </div>
+    <!-- 手書き -->
+    <div class="canvas-wrap" id="canvas-wrap">
+      <div class="canvas-hint">ここに漢字を書いてください</div>
+      <canvas class="draw-canvas" id="draw-canvas" width="560" height="180"></canvas>
+      <div class="canvas-btns">
+        <button class="canvas-btn clear" onclick="clearCanvas()">🗑 けす</button>
+        <button class="canvas-btn ok-btn" onclick="judgeCanvas(true)">⭕ あってた</button>
+        <button class="canvas-btn ng-btn" onclick="judgeCanvas(false)">❌ まちがい</button>
+      </div>
     </div>
     <div class="feedback" id="feedback"><span class="fb-icon" id="fb-icon"></span><span id="fb-text"></span></div>
     <button class="next-btn" id="next-btn" onclick="nextQ()">次の問題 →</button>
@@ -323,7 +361,7 @@ function renderQ(){
   document.getElementById('feedback').className='feedback';
   document.getElementById('next-btn').className='next-btn';
   document.getElementById('choices').innerHTML='';
-  document.getElementById('write-wrap').className='write-wrap';
+  document.getElementById('input-tabs').className='input-tabs';document.getElementById('write-wrap').className='write-wrap';document.getElementById('canvas-wrap').className='canvas-wrap';
   document.getElementById('write-input').value='';
   document.getElementById('write-input').disabled=false;
   document.getElementById('write-input').className='write-input';
@@ -335,7 +373,7 @@ function renderQ(){
     tag.textContent='✏️ 書き取り';tag.style.cssText='background:#FDF0EE;color:#E85D4A';
     body.innerHTML=`<div class="q-yomi">${curQ.yomi.split('/')[0]}</div>`;
     sub.textContent=`（${curQ.imi}）`;
-    document.getElementById('write-wrap').className='write-wrap show';
+    document.getElementById('input-tabs').className='input-tabs show';updateWriteMode();
     setTimeout(()=>document.getElementById('write-input').focus(),80);
   }else if(curQ.mode==='yomi'){
     tag.textContent='📖 読み';tag.style.cssText='background:#EFF6FF;color:#3B82F6';
@@ -389,12 +427,13 @@ function checkWrite(){
   document.getElementById('write-input').classList.add(ok?'ok':'ng');
   document.getElementById('write-input').disabled=true;
   document.getElementById('write-check').disabled=true;
+  disableCanvas();
   ok?doCorrect():doWrong(val,curQ.kanji);
   showFeedback(ok,curQ.kanji);
 }
 
-function doCorrect(){correct++;streak++;showBurst();}
-function doWrong(ans,correctAns){wrong++;streak=0;missed.push({q:curQ,ans,correctAns});}
+function doCorrect(){correct++;streak++;showBurst();playSound("ok");}
+function doWrong(ans,correctAns){wrong++;streak=0;missed.push({q:curQ,ans,correctAns});playSound("ng");}
 
 function showFeedback(ok,correctAns){
   const fb=document.getElementById('feedback');
@@ -415,7 +454,7 @@ function nextQ(){qIdx++;if(qIdx>=questions.length)showResult();else renderQ();}
 function showResult(){
   const total=questions.length,pct=Math.round((correct/total)*100);
   let hero,title;
-  if(pct>=90){hero='🏆';title='すばらしい！満点に近い！';}
+  if(pct>=90){hero='🏆';title='すばらしい！満点に近い！';playSound('fanfare');}else if(pct>=70){playSound('fanfare');}
   else if(pct>=70){hero='🌟';title='よくできました！';}
   else if(pct>=50){hero='😊';title='もう少し練習しよう！';}
   else{hero='💪';title='あきらめないで頑張ろう！';}
@@ -485,6 +524,132 @@ function showBurst(){
 }
 
 // ===== 途中終了 =====
+
+// ===== 入力モード切り替え =====
+let currentInputMode = 'type';
+function switchInput(mode){
+  currentInputMode = mode;
+  document.getElementById('tab-type').className = 'input-tab' + (mode==='type'?' active':'');
+  document.getElementById('tab-draw').className = 'input-tab' + (mode==='draw'?' active':'');
+  updateWriteMode();
+}
+function updateWriteMode(){
+  if(currentInputMode==='type'){
+    document.getElementById('write-wrap').className='write-wrap show';
+    document.getElementById('canvas-wrap').className='canvas-wrap';
+    setTimeout(()=>document.getElementById('write-input').focus(),80);
+  }else{
+    document.getElementById('write-wrap').className='write-wrap';
+    document.getElementById('canvas-wrap').className='canvas-wrap show';
+    initCanvas();
+  }
+}
+
+// ===== 手書きキャンバス =====
+let isDrawing=false, lastX=0, lastY=0, ctx=null;
+
+function initCanvas(){
+  const canvas=document.getElementById('draw-canvas');
+  // キャンバスを実際の表示サイズに合わせる
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width||canvas.offsetWidth||300;
+  canvas.height=180;
+  ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle='#1C1C2E';
+  ctx.lineWidth=4;
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+  canvas.className='draw-canvas';
+
+  // イベント登録（重複防止）
+  canvas.onmousedown=startDraw;
+  canvas.onmousemove=draw;
+  canvas.onmouseup=stopDraw;
+  canvas.onmouseleave=stopDraw;
+  canvas.ontouchstart=e=>{e.preventDefault();const t=e.touches[0];const r=canvas.getBoundingClientRect();startDrawAt(t.clientX-r.left,t.clientY-r.top);};
+  canvas.ontouchmove=e=>{e.preventDefault();const t=e.touches[0];const r=canvas.getBoundingClientRect();drawAt(t.clientX-r.left,t.clientY-r.top);};
+  canvas.ontouchend=stopDraw;
+}
+
+function startDraw(e){
+  isDrawing=true;
+  const r=e.target.getBoundingClientRect();
+  [lastX,lastY]=[e.clientX-r.left,e.clientY-r.top];
+}
+function draw(e){
+  if(!isDrawing)return;
+  const r=e.target.getBoundingClientRect();
+  drawAt(e.clientX-r.left,e.clientY-r.top);
+}
+function startDrawAt(x,y){isDrawing=true;[lastX,lastY]=[x,y];}
+function drawAt(x,y){
+  if(!isDrawing||!ctx)return;
+  ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(x,y);ctx.stroke();
+  [lastX,lastY]=[x,y];
+}
+function stopDraw(){isDrawing=false;}
+
+function clearCanvas(){
+  if(!ctx)return;
+  const c=document.getElementById('draw-canvas');
+  ctx.clearRect(0,0,c.width,c.height);
+  c.className='draw-canvas';
+}
+
+function disableCanvas(){
+  const c=document.getElementById('draw-canvas');
+  c.onmousedown=null;c.onmousemove=null;c.ontouchstart=null;c.ontouchmove=null;
+}
+
+function judgeCanvas(isOk){
+  if(answered)return;
+  answered=true;
+  disableCanvas();
+  const canvas=document.getElementById('draw-canvas');
+  canvas.className='draw-canvas '+(isOk?'ok':'ng');
+  if(isOk){doCorrect();}else{doWrong('（手書き）',curQ.kanji);}
+  showFeedback(isOk,curQ.kanji);
+}
+
+// ===== 正解音・不正解音 =====
+function playSound(type){
+  try{
+    const ac=new(window.AudioContext||window.webkitAudioContext)();
+    if(type==='ok'){
+      // 正解：明るい2音
+      [[880,.08],[1100,.15]].forEach(([freq,delay])=>{
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);
+        o.frequency.value=freq;o.type='sine';
+        g.gain.setValueAtTime(0,ac.currentTime+delay);
+        g.gain.linearRampToValueAtTime(.4,ac.currentTime+delay+.02);
+        g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+delay+.25);
+        o.start(ac.currentTime+delay);o.stop(ac.currentTime+delay+.25);
+      });
+    }else if(type==='ng'){
+      // 不正解：低い1音
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.connect(g);g.connect(ac.destination);
+      o.frequency.value=220;o.type='sawtooth';
+      g.gain.setValueAtTime(.3,ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.3);
+      o.start(ac.currentTime);o.stop(ac.currentTime+.3);
+    }else if(type==='fanfare'){
+      // 全問終了：ファンファーレ
+      [[523,.0],[659,.12],[784,.24],[1047,.36]].forEach(([freq,delay])=>{
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);
+        o.frequency.value=freq;o.type='sine';
+        g.gain.setValueAtTime(0,ac.currentTime+delay);
+        g.gain.linearRampToValueAtTime(.35,ac.currentTime+delay+.03);
+        g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+delay+.4);
+        o.start(ac.currentTime+delay);o.stop(ac.currentTime+delay+.4);
+      });
+    }
+  }catch(e){}
+}
+
 function quitQuiz(){
   if(!confirm('途中でやめてメニューに戻りますか？'))return;
   goMenu();
