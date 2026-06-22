@@ -111,9 +111,61 @@ body{font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic Pro',sans-serif;backg
 .btn-menu{padding:13px;border-radius:50px;border:2px solid var(--border);background:white;font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;color:var(--ink-sub);transition:border-color .12s;}
 .btn-menu:hover{border-color:var(--ink-sub);}
 @media(max-width:420px){.card{padding:22px 16px;}.q-kanji{font-size:2.4rem;}.choices{gap:8px;}.choice{font-size:1.1rem;padding:14px 8px;}}
+
+/* ── スプラッシュ ── */
+#screen-splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#FFF5F3 0%,#FFF8E1 50%,#F0FDF4 100%);overflow:hidden;transition:opacity .6s ease;}
+#screen-splash.fade-out{opacity:0;pointer-events:none;}
+.sp-bubbles{position:absolute;inset:0;pointer-events:none;}
+.sp-bubble{position:absolute;bottom:-60px;font-size:2rem;animation:spFloat linear infinite;opacity:.7;}
+@keyframes spFloat{0%{transform:translateY(0) rotate(0deg);opacity:.7;}100%{transform:translateY(-110vh) rotate(360deg);opacity:0;}}
+.sp-logo-wrap{animation:spBounce .7s ease both;}
+@keyframes spBounce{0%{transform:scale(.5);opacity:0;}70%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
+.sp-stamp{width:80px;height:80px;background:var(--red);border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:2.8rem;box-shadow:0 6px 0 #B84030,0 10px 30px rgba(232,93,74,.3);margin:0 auto 16px;}
+.sp-title{font-size:1.8rem;font-weight:800;color:var(--ink);letter-spacing:.04em;text-align:center;line-height:1.2;}
+.sp-sub{font-size:.85rem;color:var(--ink-sub);font-weight:700;margin-top:6px;text-align:center;letter-spacing:.06em;}
+.sp-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px;}
+.sp-badge{background:white;border-radius:50px;padding:5px 14px;font-size:.72rem;font-weight:800;color:var(--ink-sub);box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.sp-modes{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px;}
+.sp-mode{background:white;border-radius:12px;padding:8px 12px;font-size:.75rem;font-weight:700;color:var(--ink-sub);box-shadow:0 2px 8px rgba(0,0,0,.08);text-align:center;min-width:72px;}
+.sp-mode .sp-mode-icon{font-size:1.2rem;display:block;margin-bottom:2px;}
+.sp-count-wrap{margin-top:24px;text-align:center;}
+.sp-count-num{font-size:3.5rem;font-weight:800;color:var(--red);animation:spCount .4s ease;line-height:1;}
+@keyframes spCount{0%{transform:scale(1.5);opacity:0;}100%{transform:scale(1);opacity:1;}}
+.sp-skip{font-size:.72rem;color:var(--ink-sub);margin-top:8px;letter-spacing:.06em;}
+/* ── 正解エフェクト ── */
+.correct-burst{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-size:5rem;z-index:1000;animation:burst .6s ease forwards;pointer-events:none;}
+@keyframes burst{0%{transform:translate(-50%,-50%) scale(.3);opacity:1;}60%{transform:translate(-50%,-50%) scale(1.3);opacity:1;}100%{transform:translate(-50%,-50%) scale(1);opacity:0;}}
+/* ── 途中終了ボタン ── */
+.quit-btn{background:none;border:1.5px solid var(--border);border-radius:50px;padding:5px 14px;font-family:inherit;font-size:.72rem;font-weight:700;color:var(--ink-sub);cursor:pointer;transition:all .12s;}
+.quit-btn:hover{border-color:var(--red);color:var(--red);}
 </style>
 </head>
 <body>
+
+<div id="screen-splash" onclick="closeSplash()">
+  <div class="sp-bubbles" id="sp-bubbles"></div>
+  <div class="sp-logo-wrap">
+    <div class="sp-stamp">✏️</div>
+    <div class="sp-title">漢検5級 練習</div>
+    <div class="sp-sub">小学1〜6年生 漢字トレーニング</div>
+    <div class="sp-badges">
+      <span class="sp-badge">📝 853字収録</span>
+      <span class="sp-badge">🎓 1〜6年生対応</span>
+      <span class="sp-badge">🏆 漢検5級対策</span>
+    </div>
+    <div class="sp-modes">
+      <div class="sp-mode"><span class="sp-mode-icon">✏️</span>書き取り</div>
+      <div class="sp-mode"><span class="sp-mode-icon">📖</span>読み</div>
+      <div class="sp-mode"><span class="sp-mode-icon">↔️</span>対義語</div>
+      <div class="sp-mode"><span class="sp-mode-icon">💡</span>意味</div>
+      <div class="sp-mode"><span class="sp-mode-icon">🎲</span>ランダム</div>
+    </div>
+  </div>
+  <div class="sp-count-wrap">
+    <div class="sp-count-num" id="sp-count">3</div>
+    <div class="sp-skip">タップでスキップ</div>
+  </div>
+</div>
 <header class="app-header">
   <div class="app-logo">
     <div class="logo-stamp">✏️</div>
@@ -180,6 +232,7 @@ body{font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic Pro',sans-serif;backg
     <div class="quiz-meta">
       <span class="q-no" id="q-no">1 / 10</span>
       <span class="streak-pill" id="streak-pill">🔥 3連続</span>
+      <button class="quit-btn" onclick="quitQuiz()">✕ やめる</button>
     </div>
     <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
     <div class="q-mode-tag" id="q-mode-tag">✏️ 書き取り</div>
@@ -340,7 +393,7 @@ function checkWrite(){
   showFeedback(ok,curQ.kanji);
 }
 
-function doCorrect(){correct++;streak++;}
+function doCorrect(){correct++;streak++;showBurst();}
 function doWrong(ans,correctAns){wrong++;streak=0;missed.push({q:curQ,ans,correctAns});}
 
 function showFeedback(ok,correctAns){
@@ -387,6 +440,55 @@ function goMenu(){show('screen-menu');}
 function show(id){['screen-loading','screen-menu','screen-quiz','screen-result'].forEach(s=>{document.getElementById(s).style.display=s===id?'block':'none';});}
 function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('next-btn').classList.contains('show'))nextQ();});
+
+// ===== スプラッシュ =====
+(function(){
+  // バブル生成
+  const emojis=['✏️','📖','🎓','⭕','🌟','🏆','🌸','🌈','💡','↔️','🔥','🌿'];
+  const wrap=document.getElementById('sp-bubbles');
+  for(let i=0;i<18;i++){
+    const b=document.createElement('div');
+    b.className='sp-bubble';
+    b.textContent=emojis[i%emojis.length];
+    b.style.left=Math.random()*100+'%';
+    b.style.fontSize=(1.2+Math.random()*1.5)+'rem';
+    const dur=4+Math.random()*5;
+    b.style.animationDuration=dur+'s';
+    b.style.animationDelay=Math.random()*dur+'s';
+    wrap.appendChild(b);
+  }
+  // カウントダウン
+  let count=3;
+  const el=document.getElementById('sp-count');
+  const tick=setInterval(()=>{
+    count--;
+    if(count<=0){el.textContent='Go！';clearInterval(tick);setTimeout(closeSplash,700);}
+    else{el.textContent=count;el.style.animation='none';requestAnimationFrame(()=>{requestAnimationFrame(()=>{el.style.animation='spCount .4s ease';});});}
+  },1000);
+  window._splashTimer=tick;
+})();
+
+function closeSplash(){
+  clearInterval(window._splashTimer);
+  const sp=document.getElementById('screen-splash');
+  sp.classList.add('fade-out');
+  setTimeout(()=>sp.remove(),650);
+}
+
+// ===== 正解エフェクト =====
+function showBurst(){
+  const el=document.createElement('div');
+  el.className='correct-burst';
+  el.textContent='⭕';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),650);
+}
+
+// ===== 途中終了 =====
+function quitQuiz(){
+  if(!confirm('途中でやめてメニューに戻りますか？'))return;
+  goMenu();
+}
 </script>
 </body>
 </html>
